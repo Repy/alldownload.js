@@ -1,4 +1,3 @@
-
 var Repy;
 (function (Repy) {
     Repy.AllDownload = (function () {
@@ -126,7 +125,7 @@ var Repy;
             }
         });
 
-        this.Sites.Flickr = new Site({
+        this.Sites.Photozou = new Site({
             target: function (param) {
                 return location.hostname.indexOf("photozou.jp") != -1;
             },

@@ -111,7 +111,7 @@ var Repy;
                     var req = new XMLHttpRequest();
                     location.href.match(/\d+/g);
                     var pid = RegExp.lastMatch;
-                    req.open('GET', 'http://www.flickr.com/services/rest/?method=flickr.photos.getSizes&format=json&nojsoncallback=1&api_key=dbe0ad6f572dd896b0c78eca94e6997f&photo_id=' + pid, false);
+                    req.open('GET', '//www.flickr.com/services/rest/?method=flickr.photos.getSizes&format=json&nojsoncallback=1&api_key=dbe0ad6f572dd896b0c78eca94e6997f&photo_id=' + pid, false);
                     req.send(null);
                     var res = JSON.parse(req.responseText);
                     if (res.stat == "ok") {

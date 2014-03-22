@@ -1,94 +1,151 @@
+
 var Repy;
-if(!Repy) Repy = {};
+(function (Repy) {
+    Repy.AllDownload = (function () {
+        this.Sites = {};
 
-Repy.AllDownload = {};
-Repy.AllDownload.Sites = {};
+        this.Startup = function (params) {
+            for (var key in this.Sites) {
+                var plugin = this.Sites[key];
+                var param = {};
+                if (params !== undefined) {
+                    if (params.debug !== undefined && typeof params.debug === "boolean" && params.debug) {
+                        plugin.logCallback = function (str) {
+                            alert(str);
+                        };
+                    }
+                    if (params[key] !== undefined) {
+                        param = params[key];
+                    }
+                }
+                if (plugin.target(param)) {
+                    plugin.exec(param);
+                }
+            }
+        };
 
-Repy.AllDownload.Startup = function() {
-    if (typeof alldownmode == "string")if (alldownmode == "DEBUG"){
-        alert(Repy.AllDownload.URLget(alldowntype));
-    }
-    var ret = Repy.AllDownload.URLget(alldowntype);
-    if(ret)location.assign(ret);
-}
+        var Site = (function () {
+            function Site(func) {
+                this.target = func.target;
+                this.exec = func.exec;
+            }
+            Site.prototype.log = function (str) {
+                if (this.logCallback !== undefined) {
+                    this.logCallback(str);
+                }
+            };
+            return Site;
+        })();
 
-Repy.AllDownload.URLget = function(type) {
-    if (location.hostname.indexOf("youtube.com") != -1) return Repy.AllDownload.Sites.Youtube(type);
-    if (location.hostname.indexOf("pandora.tv") != -1) return Repy.AllDownload.Sites.Pandora(type);
-    if (location.hostname.indexOf("www.flickr.com") != -1) return Repy.AllDownload.Sites.Flickr(type);
-    if (location.hostname.indexOf("photozou.jp") != -1) return Repy.AllDownload.Sites.Photozou(type);
-    if (window.photoalbumCls) Repy.AllDownload.Sites.NetCommons(type);
-    if (window.photo_urls) Repy.AllDownload.Sites.NetCommons2(type);
-}
+        this.Sites.Youtube = new Site({
+            target: function (param) {
+                return window.location.hostname.indexOf("youtube.com") != -1;
+            },
+            exec: function (param) {
+                var url = (function () {
+                    var fmt_url_map = window.ytplayer.config.args.url_encoded_fmt_stream_map;
+                    var list = fmt_url_map.split(",");
+                    for (var i = 0; i < list.length; i++) {
+                        var item = list[i];
+                        var fmt = item.split("itag=")[1].split("&")[0];
+                        var type = item.split("type=")[1].split("&")[0];
+                        var url = item.split("url=")[1].split("&")[0];
+                        url = decodeURIComponent(url);
+                        var title = window.ytplayer.config.args.title;
+                        url = url + "&title=" + encodeURIComponent(title);
+                        if (typeof param.type != "string")
+                            return url;
+                        if (type.indexOf(param.type) > 0)
+                            return url;
+                    }
+                })();
+                this.log(url);
+                if (url)
+                    window.location.assign(url);
+            }
+        });
 
-Repy.AllDownload.Sites.NetCommons = function() {
-    var download = function(obj){
-        var div = document.createElement("div");
-        document.body.appendChild(div);
-        for(var i = 0 ; i<obj.photos.length ; i++){
-            div.innerHTML=div.innerHTML+"<img src=\""+ obj.photos[i].src +"\" />";
-        }
-    }
-    for(var c in window.photoalbumCls)if(typeof window.photoalbumCls[c] == "object")download(window.photoalbumCls[c]);
-    return null;
-}
+        this.Sites.NetCommons = new Site({
+            target: function (param) {
+                return window.photoalbumCls !== undefined;
+            },
+            exec: function (param) {
+                var obj = window.photoalbumCls;
+                var div = document.createElement("div");
+                document.body.appendChild(div);
+                for (var c in obj) {
+                    if (typeof obj[c] !== "object")
+                        continue;
+                    for (var i = 0; i < obj[c].photos.length; i++) {
+                        div.innerHTML = div.innerHTML + "<img src=\"" + obj[c].photos[i].src + "\" />";
+                    }
+                }
+            }
+        });
 
-Repy.AllDownload.Sites.NetCommons2 = function() {
-    var div = document.createElement("div");
-    document.body.appendChild(div);
-    for(var i = 0; i < photo_urls.length; i++)if(photo_urls[i]){
-        for(var j = 0; j < photo_urls[i].length; j++)if(photo_urls[i][j]){
-            div.innerHTML=div.innerHTML+"<img src=\""+ photo_urls[i][j] +"\" />";
-        }
-    }
-}
+        this.Sites.NetCommons2 = new Site({
+            target: function (param) {
+                return window.photo_urls !== undefined;
+            },
+            exec: function (param) {
+                var obj = window.photo_urls;
+                var div = document.createElement("div");
+                document.body.appendChild(div);
+                for (var i = 0; i < obj.length; i++) {
+                    if (obj[i] === undefined)
+                        continue;
+                    for (var j = 0; j < obj[i].length; j++) {
+                        if (obj[i][j] === undefined)
+                            continue;
+                        div.innerHTML = div.innerHTML + "<img src=\"" + obj[i][j] + "\" />";
+                    }
+                }
+            }
+        });
 
+        this.Sites.Flickr = new Site({
+            target: function (param) {
+                return location.hostname.indexOf("www.flickr.com") != -1;
+            },
+            exec: function (param) {
+                var url = (function () {
+                    var req = new XMLHttpRequest();
+                    location.href.match(/\d+/g);
+                    var pid = RegExp.lastMatch;
+                    req.open('GET', 'http://www.flickr.com/services/rest/?method=flickr.photos.getSizes&format=json&nojsoncallback=1&api_key=dbe0ad6f572dd896b0c78eca94e6997f&photo_id=' + pid, false);
+                    req.send(null);
+                    var res = JSON.parse(req.responseText);
+                    if (res.stat == "ok") {
+                        return (res.sizes.size[res.sizes.size.length - 1].source.replace(".jpg", "_d.jpg"));
+                    }
+                    return false;
+                })();
+                this.log(url);
+                if (url)
+                    window.location.assign(url);
+            }
+        });
 
+        this.Sites.Flickr = new Site({
+            target: function (param) {
+                return location.hostname.indexOf("photozou.jp") != -1;
+            },
+            exec: function (param) {
+                var url = (function () {
+                    var req = new XMLHttpRequest();
+                    req.open('GET', location.href.replace("show", "photo_only"), false);
+                    req.send(null);
+                    return req.responseText.match(/http:\S+download=yes/);
+                })();
+                this.log(url);
+                if (url)
+                    window.location.assign(url);
+            }
+        });
 
-Repy.AllDownload.Sites.Youtube = function(gettype) {
-    var fmt_url_map = ytplayer.config.args.url_encoded_fmt_stream_map;
-    var list = fmt_url_map.split(",");
-    for(var i = 0;i<list.length;i++){
-        var item = list[i];
-        var fmt       = item.split("itag=")[1].split("&")[0];
-        var type      = item.split("type=")[1].split("&")[0];
-        var url       = item.split("url=")[1].split("&")[0];
-        var title = encodeURIComponent(ytplayer.config.args.title);
-        url = decodeURIComponent(url);
-        
-        if(typeof gettype != "string")
-            return url  + "&title=" + title;
-        if(type.indexOf(gettype)>0)
-            return url  + "&title=" + title;
-    }
-};
-
-Repy.AllDownload.Sites.Pandora = function() {
-    return vod.replace("flvg", "flvorgx");
-}
-
-Repy.AllDownload.Sites.Flickr = function() {
-    var req = new XMLHttpRequest();
-    location.href.match(/\d+/g);
-    var pid = RegExp.lastMatch;
-    req.open('GET', 'http://www.flickr.com/services/rest/?method=flickr.photos.getSizes&format=json&nojsoncallback=1&api_key=dbe0ad6f572dd896b0c78eca94e6997f&photo_id=' + pid, false);
-    req.send(null);
-    eval("var res = " + req.responseText + ";");
-    if (res.stat == "ok") {
-        return (res.sizes.size[res.sizes.size.length - 1].source.replace(".jpg", "_d.jpg"));
-    }
-    return false;
-}
-
-Repy.AllDownload.Sites.Photozou = function() {
-    var req = new XMLHttpRequest();
-    req.open('GET', location.href.replace("show", "photo_only"), false);
-    req.send(null);
-    return req.responseText.match(/http:\S+download=yes/);
-}
-
-Repy.AllDownload.Startup();
-
+        return this;
+    })();
+})(Repy || (Repy = {}));
 
 /*
 javascript:
@@ -97,18 +154,23 @@ var js = document.createElement("script");
 js.type = "text/javascript";
 js.charset = "utf-8";
 js.src = "https://bitbucket.org/repy/alldownload.js/raw/master/AllDownload.js";
+js.addEventListener("load", function () {
+Repy.AllDownload.Startup();
+});
 document.body.appendChild(js);
 })();
 */
 
 /*
 javascript:
-var alldownmode = "DEBUG";
 (function(){
 var js = document.createElement("script");
 js.type = "text/javascript";
 js.charset = "utf-8";
 js.src = "https://bitbucket.org/repy/alldownload.js/raw/master/AllDownload.js";
+js.addEventListener("load", function () {
+Repy.AllDownload.Startup({ debug: true, Youtube: { type: "mp4" } });
+});
 document.body.appendChild(js);
 })();
 */

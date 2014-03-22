@@ -96,7 +96,7 @@ javascript:
 var js = document.createElement("script");
 js.type = "text/javascript";
 js.charset = "utf-8";
-js.src = "http://img.repy.info/file/AllDownload.js";
+js.src = "https://bitbucket.org/repy/alldownload.js/raw/master/AllDownload.js";
 document.body.appendChild(js);
 })();
 */
@@ -108,7 +108,7 @@ var alldownmode = "DEBUG";
 var js = document.createElement("script");
 js.type = "text/javascript";
 js.charset = "utf-8";
-js.src = "http://img.repy.info/file/AllDownload.js";
+js.src = "https://bitbucket.org/repy/alldownload.js/raw/master/AllDownload.js";
 document.body.appendChild(js);
 })();
 */

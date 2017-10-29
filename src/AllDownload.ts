@@ -18,42 +18,60 @@ namespace Repy.AllDownload {
 	};
 
 	export class Site {
-		public target: (param) => boolean;
-		public exec: (param) => void;
 		public constructor(func) {
 			this.target = func.target;
 			this.exec = func.exec;
 		}
+		public target: (param) => boolean;
+		public exec: (param) => void;
 		public log(str) {
 		}
 	}
 
 }
 
+
 Repy.AllDownload.Sites["Youtube"] = new Repy.AllDownload.Site({
 	target: function(param) {
 		return window.location.hostname.indexOf("youtube.com") != -1;
 	},
 	exec: function(param) {
-		function escapeHTML(str) {
-			return str.replace(/&/g, '&amp;')
-				.replace(/</g, '&lt;')
-				.replace(/>/g, '&gt;')
-				.replace(/"/g, '&quot;')
-				.replace(/'/g, '&#039;');
-		}
-		var video_id = window.location.href.match(/(\?|&)v=([^&]*)(&|$)/)[2];
-		var xmlhttp;
-		xmlhttp = null;
-		xmlhttp = new XMLHttpRequest();
+		var ytplayer = window["ytplayer"];
+		var xmlhttp = new XMLHttpRequest();
 		xmlhttp.addEventListener("load", function() {
-			var videoinfo; videoinfo = {};
-			xmlhttp.responseText.split("&").forEach(function(keyval) {
-				var sp = keyval.split("=");
-				videoinfo[sp[0]] = decodeURIComponent(sp[1]);
-			});
+			// https://github.com/spenibus/greasemonkey-scripts/blob/master/youtube.user.js
+			var content = xmlhttp.responseText;
+			// move vars declaration outside IIFE so we can access them
+			var m = content.match(/{var window=this;(var [\s\S]*?;)/)
+			if (!m) {
+				return;
+			}
+			var varsDeclaration = m[1];
+			content = varsDeclaration + content.replace(varsDeclaration, '');
+			// eval the code to access the vars in this scope
+			eval(content);
+			// get decipher function name
+			// キモ
+			m = (/\.set\("signature",([\$\w]+)\(/i).exec(content);
+			if (!m) {
+				return;
+			}
+			var funcName = m[1];
+			// bind function to a usable local name
+			var sigDecode;
+			eval('sigDecode = ' + funcName);
+			// ここまで
+
+			function escapeHTML(str) {
+				return str.replace(/&/g, '&amp;')
+					.replace(/</g, '&lt;')
+					.replace(/>/g, '&gt;')
+					.replace(/"/g, '&quot;')
+					.replace(/'/g, '&#039;');
+			}
+			var video_id = window.location.href.match(/(\?|&)v=([^&]*)(&|$)/)[2];
 			var fmt = [];
-			videoinfo.adaptive_fmts.split(",").forEach(function(itagstr) {
+			ytplayer.config.args.adaptive_fmts.split(",").forEach(function(itagstr) {
 				var o = {};
 				itagstr.split("&").forEach(function(keyval) {
 					var sp = keyval.split("=");
@@ -65,7 +83,10 @@ Repy.AllDownload.Sites["Youtube"] = new Repy.AllDownload.Site({
 			document.write("<!DOCTYPE html><html><head><meta charset=\"UTF-8\"></head><body>");
 			fmt.forEach(function(element) {
 				var url = element.url;
-				var title = videoinfo.title;
+				if (url.indexOf("signature") == -1) {
+					url = element.url+"&signature="+sigDecode(element.s);
+				}
+				var title = ytplayer.config.args.title;
 				if (element.type.indexOf("video/webm") > -1) {
 					title = title + ".v.mebm";
 				} else if (element.type.indexOf("audio/webm") > -1) {
@@ -88,7 +109,7 @@ Repy.AllDownload.Sites["Youtube"] = new Repy.AllDownload.Site({
 			document.write("</body></html>");
 			document.close();
 		});
-		xmlhttp.open("GET", "https://www.youtube.com/get_video_info?video_id=" + video_id + "&el=detailpage&hl=en_US", true);
+		xmlhttp.open("GET", ytplayer.config.assets.js, true);
 		xmlhttp.send();
 	}
 });

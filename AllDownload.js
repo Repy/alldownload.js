@@ -87,10 +87,10 @@ Repy.AllDownload.Sites["Youtube"] = new Repy.AllDownload.Site({
                 }
                 var title = ytplayer.config.args.title;
                 if (element.type.indexOf("video/webm") > -1) {
-                    title = title + ".v.mebm";
+                    title = title + ".v.webm";
                 }
                 else if (element.type.indexOf("audio/webm") > -1) {
-                    title = title + ".a.mebm";
+                    title = title + ".a.webm";
                 }
                 else if (element.type.indexOf("video/mp4") > -1) {
                     title = title + ".mp4";
@@ -195,7 +195,7 @@ javascript:
 var js = document.createElement("script");
 js.type = "text/javascript";
 js.charset = "utf-8";
-js.src = "https://repy.github.io/alldownload.js/AllDownload.js";
+js.src = "https://repy.github.io/alldownload.js/AllDownload.js?rand="+Math.random();
 js.addEventListener("load", function () {
 Repy.AllDownload.Startup();
 });

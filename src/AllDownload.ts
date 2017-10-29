@@ -177,23 +177,9 @@ javascript:
 var js = document.createElement("script");
 js.type = "text/javascript";
 js.charset = "utf-8";
-js.src = "https://bitbucket.org/repy/alldownload.js/raw/master/AllDownload.js";
+js.src = "https://repy.github.io/alldownload.js/AllDownload.js";
 js.addEventListener("load", function () {
 Repy.AllDownload.Startup();
-});
-document.body.appendChild(js);
-})();
-*/
-
-/*
-javascript:
-(function(){
-var js = document.createElement("script");
-js.type = "text/javascript";
-js.charset = "utf-8";
-js.src = "https://bitbucket.org/repy/alldownload.js/raw/master/AllDownload.js";
-js.addEventListener("load", function () {
-Repy.AllDownload.Startup({ debug: true, Youtube: { type: "mp4" } });
 });
 document.body.appendChild(js);
 })();
